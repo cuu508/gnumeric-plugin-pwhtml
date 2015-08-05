@@ -7,9 +7,10 @@ LIBS = `pkg-config --libs $(GODEPS)`
 
 CFLAGS=$(INCLUDES) -I$(GNM_DIR)
 
+compile: pwhtml/boot.o pwhtml/html.o pwhtml/font.o
+	gcc $(LIBS) -shared -o pwhtml/pwhtml.so $^
+
 %.o: %.c
 	gcc $(CFLAGS) -fPIC -o $@ -c $<
 
-pwhtml.so: boot.o html.o font.o
-	gcc $(LIBS) -shared -o $@ $^
 
