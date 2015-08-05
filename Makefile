@@ -12,4 +12,14 @@ compile: pwhtml/boot.o pwhtml/html.o pwhtml/font.o
 %.o: %.c
 	gcc $(CFLAGS) -fPIC -o $@ -c $<
 
+dist = gnumeric-plugin-pwhtml-trusty64
+binary: compile
+	rm -rf $(dist)
+	mkdir $(dist)
+	mkdir $(dist)/pwhtml
+	cp pwhtml/pwhtml.so $(dist)/pwhtml/
+	cp pwhtml/plugin.xml $(dist)/pwhtml/
+	rm -f $(dist).tar.gz
+	tar cfzh $(dist).tar.gz $(dist)
+	rm -rf $(dist)
 
