@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin id="PW_html">
+	<information>
+		<name>PW flavored HTML</name>
+		<description>Export tp PW flavored HTML</description>
+	</information>
+	<loader type="Gnumeric_Builtin:module">
+		<attribute value="pwhtml" name="module_file"/>
+	</loader>
+	<services>
+		<service type="file_saver" id="pwhtml" format_level="write_only" file_extension="pwhtml">
+			<information>
+				<description>PW flavored HTML (*.pwhtml)</description>
+			</information>
+		</service>
+	</services>
+</plugin>
