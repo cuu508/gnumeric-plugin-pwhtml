@@ -26,7 +26,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <gnumeric-config.h>
 #include <gnumeric.h>
 #include <goffice/goffice.h>
 #include "workbook-view.h"

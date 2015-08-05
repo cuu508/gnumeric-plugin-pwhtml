@@ -5,7 +5,7 @@ GODEPS=libspreadsheet-1.12
 INCLUDES = `pkg-config --cflags $(GODEPS)`
 LIBS = `pkg-config --libs $(GODEPS)`
 
-CFLAGS=$(INCLUDES) -I$(GNM_DIR)
+CFLAGS=$(INCLUDES)
 
 compile: pwhtml/boot.o pwhtml/html.o pwhtml/font.o
 	gcc $(LIBS) -shared -o pwhtml/pwhtml.so $^
