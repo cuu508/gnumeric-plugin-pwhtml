@@ -1,11 +1,10 @@
-GNM_DIR=/home/cepe/Downloads/gnumeric-1.12.18
-GNM_SRC_DIR=$(GNM_DIR)/src
+GNM_DIR=/home/vagrant/gnumeric-1.12.9
 
-GODEPS=libspreadsheet-1.12
-INCLUDES = `pkg-config --cflags $(GODEPS)`
-LIBS = `pkg-config --libs $(GODEPS)`
+GODEPS=libspreadsheet
+INCLUDES = `PKG_CONFIG_PATH=$(GNM_DIR) pkg-config --cflags $(GODEPS)`
+LIBS = `PKG_CONFIG_PATH=$(GNM_DIR) pkg-config --libs $(GODEPS)`
 
-CFLAGS=$(INCLUDES)
+CFLAGS=$(INCLUDES) -I$(GNM_DIR) -I$(GNM_DIR)/src
 
 compile: pwhtml/boot.o pwhtml/html.o pwhtml/font.o
 	gcc $(LIBS) -shared -o pwhtml/pwhtml.so $^
