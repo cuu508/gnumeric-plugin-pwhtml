@@ -89,9 +89,6 @@ html_print_encoded (GsfOutput *output, char const *str)
 			case '&':
 				gsf_output_puts (output, "&amp;");
 				break;
-			case '\"':
-				gsf_output_puts (output, "&quot;");
-				break;
 			case '\n':
 				gsf_output_puts (output, "<br />\n");
 				break;
@@ -111,7 +108,7 @@ html_print_encoded (GsfOutput *output, char const *str)
 }
 
 static void
-html_print_encoded_no_br (GsfOutput *output, char const *str)
+html_print_encoded_attr_value (GsfOutput *output, char const *str)
 {
     gunichar c;
 
@@ -451,7 +448,7 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
             if (cell != NULL && cell->value) {
                 text = value_peek_string (cell->value);
                 gsf_output_puts (output, "<td raw=\"");
-                html_print_encoded_no_br (output, text);
+                html_print_encoded_attr_value (output, text);
                 gsf_output_puts (output, "\" ");
 
                 write_cell (output, sheet, merge_range->start.row, merge_range->start.col, version, FALSE);
@@ -468,7 +465,7 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
         if (cell != NULL && cell->value) {
             text = value_peek_string (cell->value);
             gsf_output_puts (output, "<td raw=\"");
-            html_print_encoded_no_br (output, text);
+            html_print_encoded_attr_value (output, text);
             gsf_output_puts (output, "\" ");
 
             write_cell (output, sheet, row, col, version, FALSE);

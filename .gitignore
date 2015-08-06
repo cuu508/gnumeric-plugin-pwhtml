@@ -1,2 +1,3 @@
 pwhtml/*.o
 pwhtml/*.so
+tests/*.pyc

@@ -13,8 +13,8 @@ compile: pwhtml/boot.o pwhtml/html.o pwhtml/font.o
 	gcc $(CFLAGS) -fPIC -o $@ -c $<
 
 clean:
-	rm pwhtml/*.o
-	rm pwhtml/*.so
+	rm -f pwhtml/*.o
+	rm -f pwhtml/*.so
 
 install:
 	cp -r pwhtml /usr/lib/gnumeric/1.12.18/plugins/
