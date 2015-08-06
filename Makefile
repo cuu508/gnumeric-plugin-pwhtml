@@ -1,6 +1,6 @@
 GNM_DIR=/home/vagrant/gnumeric-1.12.9
 
-GODEPS=libspreadsheet
+GODEPS=libspreadsheet-1.12
 INCLUDES = `PKG_CONFIG_PATH=$(GNM_DIR) pkg-config --cflags $(GODEPS)`
 LIBS = `PKG_CONFIG_PATH=$(GNM_DIR) pkg-config --libs $(GODEPS)`
 
@@ -21,12 +21,7 @@ install:
 
 dist = gnumeric-plugin-pwhtml-trusty64
 binary: compile
-	rm -rf $(dist)
-	mkdir $(dist)
-	mkdir $(dist)/pwhtml
-	cp pwhtml/pwhtml.so $(dist)/pwhtml/
-	cp pwhtml/plugin.xml $(dist)/pwhtml/
 	rm -f $(dist).tar.gz
-	tar cfzh $(dist).tar.gz $(dist)
+	tar cfzh $(dist).tar.gz pwhtml/pwhtml.so pwhtml/plugin.xml
 	rm -rf $(dist)
 
