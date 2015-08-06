@@ -74,7 +74,7 @@ typedef enum {
 static void
 html_print_encoded (GsfOutput *output, char const *str)
 {
-	gunichar c;
+    gunichar c;
 
 	if (str == NULL)
 		return;
@@ -104,12 +104,7 @@ html_print_encoded (GsfOutput *output, char const *str)
 				break;
 			default:
 				c = g_utf8_get_char (str);
-				if (((c >= 0x20) && (c < 0x80)) ||
-				    (c == '\n') || (c == '\r') || (c == '\t'))
-					gsf_output_write (output, 1, str);
-				else
-                    gsf_output_puts (output, g_ucs4_to_utf8(&c, 1, NULL, NULL, NULL));
-                    //gsf_output_printf (output, "&#%u;", c);
+                gsf_output_puts (output, g_ucs4_to_utf8(&c, 1, NULL, NULL, NULL));
 				break;
 		}
 	}
@@ -138,12 +133,7 @@ html_print_encoded_no_br (GsfOutput *output, char const *str)
                 break;
             default:
                 c = g_utf8_get_char (str);
-                if (((c >= 0x20) && (c < 0x80)) ||
-                    (c == '\n') || (c == '\r') || (c == '\t'))
-                    gsf_output_write (output, 1, str);
-                else
-                    gsf_output_puts (output, g_ucs4_to_utf8(&c, 1, NULL, NULL, NULL));
-                    //gsf_output_printf (output, "&#%u;", c);
+                gsf_output_puts (output, g_ucs4_to_utf8(&c, 1, NULL, NULL, NULL));
                 break;
         }
     }
@@ -162,14 +152,7 @@ html_get_text_color (GnmCell *cell, GnmStyle const *style, guint *r, guint *g, g
 		*b = GO_COLOR_UINT_B (fore);
 	}
 }
-static void
-html_get_back_color (GnmStyle const *style, guint *r, guint *g, guint *b)
-{
-	GnmColor const *color = gnm_style_get_back_color (style);
-	*r = GO_COLOR_UINT_R (color->go_color);
-	*g = GO_COLOR_UINT_G (color->go_color);
-	*b = GO_COLOR_UINT_B (color->go_color);
-}
+
 
 /*****************************************************************************/
 
@@ -318,7 +301,7 @@ html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style
 	char *rendered_string;
 	gboolean hidden = gnm_style_get_contents_hidden (style);
 	GnmHLink* hlink = gnm_style_get_hlink (style);
-	const guchar* hlink_target = NULL;
+	const gchar* hlink_target = NULL;
 
 	if (hlink && IS_GNM_HLINK_URL (hlink)) {
 		hlink_target = gnm_hlink_get_target (hlink);
@@ -417,138 +400,11 @@ html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style
 	}
 }
 
-static char *
-html_get_border_style (GnmBorder *border)
-{
-	GString *text = g_string_new (NULL);
-	char *result;
-
-	switch (border->line_type) {
-	case GNM_STYLE_BORDER_THIN:
-		g_string_append (text, "thin solid");
-		break;
-	case GNM_STYLE_BORDER_MEDIUM:
-		g_string_append (text, "medium solid");
-		break;
-	case GNM_STYLE_BORDER_DASHED:
-		g_string_append (text, "thin dashed");
-		break;
-	case GNM_STYLE_BORDER_DOTTED:
-		g_string_append (text, "thin dotted");
-		break;
-	case GNM_STYLE_BORDER_THICK:
-		g_string_append (text, "thick solid");
-		break;
-	case GNM_STYLE_BORDER_DOUBLE:
-		g_string_append (text, "thick double");
-		break;
-	case GNM_STYLE_BORDER_HAIR:
-		g_string_append (text, "0.5pt solid");
-		break;
-	case GNM_STYLE_BORDER_MEDIUM_DASH:
-		g_string_append (text, "medium dashed");
-		break;
-	case GNM_STYLE_BORDER_DASH_DOT:
-		g_string_append (text, "thin dashed");
-		break;
-	case GNM_STYLE_BORDER_MEDIUM_DASH_DOT:
-		g_string_append (text, "medium dashed");
-		break;
-	case GNM_STYLE_BORDER_DASH_DOT_DOT:
-		g_string_append (text, "thin dotted");
-		break;
-	case GNM_STYLE_BORDER_MEDIUM_DASH_DOT_DOT:
-		g_string_append (text, "medium dotted");
-		break;
-	case GNM_STYLE_BORDER_SLANTED_DASH_DOT:
-		g_string_append (text, "thin dashed");
-		break;
-	default:
-		break;
-	}
-
-	if (border->color) {
-		guint r, g, b;
-		r = GO_COLOR_UINT_R (border->color->go_color);
-		g = GO_COLOR_UINT_G (border->color->go_color);
-		b = GO_COLOR_UINT_B (border->color->go_color);
-		g_string_append_printf (text, " #%02X%02X%02X", r, g, b);
-	}
-
-	result = text->str;
-	g_string_free (text, FALSE);
-	return result;
-}
-
-static void
-html_write_one_border_style_40 (GsfOutput *output, GnmBorder *border, char const *border_name)
-{
-	char *text;
-	text = html_get_border_style (border);
-	if (text == NULL || strlen (text) == 0)
-		return;
-	gsf_output_printf (output, " %s:%s;", border_name, text);
-	g_free (text);
-}
-
-static void
-html_write_border_style_40 (GsfOutput *output, GnmStyle const *style)
-{
-	GnmBorder *border;
-
-	border = gnm_style_get_border (style, MSTYLE_BORDER_TOP);
-	if (!gnm_style_border_is_blank (border))
-		html_write_one_border_style_40 (output, border, "border-top");
-	border = gnm_style_get_border (style, MSTYLE_BORDER_BOTTOM);
-	if (!gnm_style_border_is_blank (border))
-		html_write_one_border_style_40 (output, border, "border-bottom");
-	border = gnm_style_get_border (style, MSTYLE_BORDER_LEFT);
-	if (!gnm_style_border_is_blank (border))
-		html_write_one_border_style_40 (output, border, "border-left");
-	border = gnm_style_get_border (style, MSTYLE_BORDER_RIGHT);
-	if (!gnm_style_border_is_blank (border))
-		html_write_one_border_style_40 (output, border, "border-right");
-}
-
-static void
-html_write_border_style_40_for_merged_cell (GsfOutput *output, GnmStyle const *style,
-					    Sheet *sheet, gint row, gint col)
-{
-	GnmBorder *border;
-	GnmRange const *merge_range;
-	GnmCellPos pos;
-	pos.col = col;
-	pos.row = row;
-
-
-	border = gnm_style_get_border (style, MSTYLE_BORDER_TOP);
-	if (!gnm_style_border_is_blank (border))
-		html_write_one_border_style_40 (output, border, "border-top");
-	border = gnm_style_get_border (style, MSTYLE_BORDER_LEFT);
-	if (!gnm_style_border_is_blank (border))
-		html_write_one_border_style_40 (output, border, "border-left");
-
-	merge_range = gnm_sheet_merge_contains_pos (sheet, &pos);
-	if (merge_range != NULL) {
-		style = sheet_style_get (sheet, merge_range->end.col, merge_range->end.row);
-		if (style == NULL)
-			return;
-	}
-
-	border = gnm_style_get_border (style, MSTYLE_BORDER_BOTTOM);
-	if (!gnm_style_border_is_blank (border))
-		html_write_one_border_style_40 (output, border, "border-bottom");
-	border = gnm_style_get_border (style, MSTYLE_BORDER_RIGHT);
-	if (!gnm_style_border_is_blank (border))
-		html_write_one_border_style_40 (output, border, "border-right");
-}
-
 static void
 write_cell (GsfOutput *output, Sheet *sheet, gint row, gint col, html_version_t version, gboolean is_merge)
 {
 	GnmCell *cell;
 	GnmStyle const *style;
-	guint r, g, b;
 
 	style = sheet_style_get (sheet, col, row);
 	cell = sheet_cell_get (sheet, col, row);
@@ -582,7 +438,6 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
         row_calc_spans ((ColRowInfo *) ri, row, sheet);
 
     for (col = range->start.col; col <= range->end.col; col++) {
-        CellSpanInfo const *the_span;
         GnmRange const *merge_range;
         GnmCellPos pos;
         pos.col = col;
@@ -640,23 +495,8 @@ write_sheet (GsfOutput *output, Sheet *sheet,
 	GnmRange total_range;
 	gint row;
 
-	switch (version) {
-	case HTML40:
-		gsf_output_puts (output, "<p><table cellspacing=\"0\" cellpadding=\"3\">\n");
-		break;
-	case XHTML:
-		gsf_output_puts (output, "<table>\n");
-		break;
-	default:
-		gsf_output_puts (output, "<p><table border=\"1\">\n");
-		break;
-	}
+	gsf_output_puts (output, "<table>\n");
 
-	if (save_scope != GO_FILE_SAVE_RANGE) {
-		gsf_output_puts (output, "<caption>");
-		html_print_encoded (output, sheet->name_unquoted);
-		gsf_output_puts (output, "</caption>\n");
-	}
 	total_range = sheet_get_extent (sheet, TRUE, TRUE);
 	for (row = total_range.start.row; row <=  total_range.end.row; row++) {
 		gsf_output_puts (output, "<tr>\n");
@@ -683,65 +523,14 @@ html_file_save (GOFileSaver const *fs, GOIOContext *io_context,
 	g_return_if_fail (wb != NULL);
 	g_return_if_fail (output != NULL);
 
-	switch (version) {
-	case HTML32:
 	gsf_output_puts (output,
-"<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n"
-"<html>\n"
-"<head>\n\t<title>Tables</title>\n"
-"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n"
-"<meta name=\"generator\" content=\"Gnumeric " GNM_VERSION_FULL  " via " G_PLUGIN_FOR_HTML "\">\n"
-"<style><!--\n"
-"tt {\n"
-"\tfont-family: courier;\n"
-"}\n"
-"td {\n"
-"\tfont-family: helvetica, sans-serif;\n"
-"}\n"
-"caption {\n"
-"\tfont-family: helvetica, sans-serif;\n"
-"\tfont-size: 14pt;\n"
-"\ttext-align: left;\n"
-"}\n"
-"--></style>\n"
-"</head>\n<body>\n");
-		break;
-	case HTML40:
-		gsf_output_puts (output,
-"<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\"\n"
-"\t\t\"http://www.w3.org/TR/html4/strict.dtd\">\n"
-"<html>\n"
-"<head>\n\t<title>Tables</title>\n"
-"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n"
-"<meta name=\"generator\" content=\"Gnumeric " GNM_VERSION_FULL  " via " G_PLUGIN_FOR_HTML "\">\n"
-"<style type=\"text/css\">\n"
-"tt {\n"
-"\tfont-family: courier;\n"
-"}\n"
-"td {\n"
-"\tfont-family: helvetica, sans-serif;\n"
-"}\n"
-"caption {\n"
-"\tfont-family: helvetica, sans-serif;\n"
-"\tfont-size: 14pt;\n"
-"\ttext-align: left;\n"
-"}\n"
-"</style>\n"
-"</head>\n<body>\n");
-		break;
-	case XHTML  :
-		gsf_output_puts (output,
 "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
 "\t\t\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"
 "<html>\n"
-"<head>\n\t<title>Tables Yo</title>\n"
+"<head>\n\t<title>Tables 123</title>\n"
 "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n"
 "<meta name=\"generator\" content=\"Gnumeric " GNM_VERSION_FULL  " via " G_PLUGIN_FOR_HTML "\" />\n"
 "</head>\n<body>\n");
-		break;
-	default:
-		break;
-	}
 
 	sheets = workbook_sheets (wb);
 	save_scope = go_file_saver_get_save_scope (fs);
@@ -754,37 +543,9 @@ html_file_save (GOFileSaver const *fs, GOIOContext *io_context,
 }
 
 void
-html40_file_save (GOFileSaver const *fs, GOIOContext *io_context,
-                  WorkbookView const *wb_view, GsfOutput *output)
-{
-	html_file_save (fs, io_context, wb_view, output, HTML40);
-}
-
-void
-html32_file_save (GOFileSaver const *fs, GOIOContext *io_context,
-                  WorkbookView const *wb_view, GsfOutput *output)
-{
-	html_file_save (fs, io_context, wb_view, output, HTML32);
-}
-
-void
-html40frag_file_save (GOFileSaver const *fs, GOIOContext *io_context,
-		      WorkbookView const *wb_view, GsfOutput *output)
-{
-	html_file_save (fs, io_context, wb_view, output, HTML40F);
-}
-
-void
 pwhtml_file_save (GOFileSaver const *fs, GOIOContext *io_context,
 		 WorkbookView const *wb_view, GsfOutput *output)
 {
 	html_file_save (fs, io_context, wb_view, output, XHTML);
 }
 
-void
-xhtml_range_file_save (GOFileSaver const *fs, GOIOContext *io_context,
-		      WorkbookView const *wb_view, GsfOutput *output)
-{
-	/* Identical, but fs->save_scope is different */
-	xhtml_file_save (fs, io_context, wb_view, output);
-}
