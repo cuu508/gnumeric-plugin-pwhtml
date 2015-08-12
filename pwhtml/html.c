@@ -62,6 +62,29 @@ typedef enum {
 	XHTML     = 3
 } html_version_t;
 
+static void
+pwcsv_print_encoded (GsfOutput *output, char const *str)
+{
+    gunichar c;
+
+    if (str == NULL)
+        return;
+
+    gsf_output_puts (output, "\"");
+    for (; *str != '\0' ; str = g_utf8_next_char (str)) {
+        switch (*str) {
+            case '"':
+                gsf_output_puts (output, "\"\"");
+                break;
+            default:
+                c = g_utf8_get_char (str);
+                gsf_output_puts (output, g_ucs4_to_utf8(&c, 1, NULL, NULL, NULL));
+                break;
+        }
+    }
+    gsf_output_puts (output, "\",");
+}
+
 /*
  * html_print_encoded:
  *
@@ -80,7 +103,10 @@ html_print_encoded (GsfOutput *output, char const *str)
 		return;
 	for (; *str != '\0' ; str = g_utf8_next_char (str)) {
 		switch (*str) {
-			case '<':
+            case '"':
+                gsf_output_puts (output, "\"\"");
+                break;
+            case '<':
 				gsf_output_puts (output, "&lt;");
 				break;
 			case '>':
@@ -106,50 +132,6 @@ html_print_encoded (GsfOutput *output, char const *str)
 		}
 	}
 }
-
-static void
-html_print_encoded_attr_value (GsfOutput *output, char const *str)
-{
-    gunichar c;
-
-    if (str == NULL)
-        return;
-    for (; *str != '\0' ; str = g_utf8_next_char (str)) {
-        switch (*str) {
-            case '<':
-                gsf_output_puts (output, "&lt;");
-                break;
-            case '>':
-                gsf_output_puts (output, "&gt;");
-                break;
-            case '&':
-                gsf_output_puts (output, "&amp;");
-                break;
-            case '\"':
-                gsf_output_puts (output, "&quot;");
-                break;
-            default:
-                c = g_utf8_get_char (str);
-                gsf_output_puts (output, g_ucs4_to_utf8(&c, 1, NULL, NULL, NULL));
-                break;
-        }
-    }
-}
-
-static void
-html_get_text_color (GnmCell *cell, GnmStyle const *style, guint *r, guint *g, guint *b)
-{
-	GOColor fore = gnm_cell_get_render_color (cell);
-
-	if (fore == 0)
-		*r = *g = *b = 0;
-	else {
-		*r = GO_COLOR_UINT_R (fore);
-		*g = GO_COLOR_UINT_G (fore);
-		*b = GO_COLOR_UINT_B (fore);
-	}
-}
-
 
 /*****************************************************************************/
 
@@ -200,16 +182,8 @@ cb_html_attrs_as_string (GsfOutput *output, PangoAttribute *a, html_version_t ve
 		break;
 	case PANGO_ATTR_STRIKETHROUGH :
 		if (((PangoAttrInt *)a)->value == 1) {
-			if (version == HTML32) {
-				gsf_output_puts (output, "<strike>");
-				closure = "</strike>";
-			} else {
-				gsf_output_puts
-					(output,
-					 "<span style=\"text-decoration: "
-					 "line-through;\">");
-				closure = "</span>";
-			}
+			gsf_output_puts (output, "<strike>");
+			closure = "</strike>";
 		}
 		break;
 	case PANGO_ATTR_UNDERLINE :
@@ -292,124 +266,80 @@ html_new_markup (GsfOutput *output, const PangoAttrList *markup, char const *tex
 static void
 html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style, html_version_t version)
 {
-	guint r = 0;
-	guint g = 0;
-	guint b = 0;
+    gsf_output_puts (output, "\"");
+
 	char *rendered_string;
-	gboolean hidden = gnm_style_get_contents_hidden (style);
-	GnmHLink* hlink = gnm_style_get_hlink (style);
-	const gchar* hlink_target = NULL;
 
-	if (hlink && IS_GNM_HLINK_URL (hlink)) {
-		hlink_target = gnm_hlink_get_target (hlink);
-	}
+	if (style != NULL) {
+		if (gnm_style_get_font_italic (style))
+			gsf_output_puts (output, "<i>");
+		if (gnm_style_get_font_bold (style))
+			gsf_output_puts (output, "<b>");
+		if (gnm_style_get_font_uline (style) != UNDERLINE_NONE)
+			gsf_output_puts (output, "<u>");
+		if (font_is_monospaced (style))
+			gsf_output_puts (output, "<tt>");
+		if (gnm_style_get_font_strike (style))
+			gsf_output_puts (output, "<strike>");
 
-	if (version == HTML32 && hidden)
-		gsf_output_puts (output, "<!-- 'HIDDEN DATA' -->");
-	else {
-		if (style != NULL) {
-			if (gnm_style_get_font_italic (style))
-				gsf_output_puts (output, "<i>");
-			if (gnm_style_get_font_bold (style))
-				gsf_output_puts (output, "<b>");
-			if (gnm_style_get_font_uline (style) != UNDERLINE_NONE)
-				gsf_output_puts (output, "<u>");
-			if (font_is_monospaced (style))
-				gsf_output_puts (output, "<tt>");
-			if (gnm_style_get_font_strike (style)) {
-				if (version == HTML32)
-					gsf_output_puts (output, "<strike>");
-				else
-					gsf_output_puts (output,
-							 "<span style=\"text-decoration: line-through;\">");
-			}
-			switch (gnm_style_get_font_script (style)) {
-			case GO_FONT_SCRIPT_SUB:
-				gsf_output_puts (output, "<sub>");
-				break;
-			case GO_FONT_SCRIPT_SUPER:
-				gsf_output_puts (output, "<sup>");
-				break;
-			default:
-				break;
-			}
-		}
-
-		if (hlink_target)
-			gsf_output_printf (output, "<a href=\"%s\">", hlink_target);
-
-		if (cell != NULL) {
-			const PangoAttrList * markup = NULL;
-
-			if (style != NULL && version != HTML40) {
-				html_get_text_color (cell, style, &r, &g, &b);
-				if (r > 0 || g > 0 || b > 0)
-					gsf_output_printf (output, "<font color=\"#%02X%02X%02X\">", r, g, b);
-			}
-
-			if ((cell->value->type == VALUE_STRING)
-			    && (VALUE_FMT (cell->value) != NULL)
-			    && go_format_is_markup (VALUE_FMT (cell->value)))
-				markup = go_format_get_markup (VALUE_FMT (cell->value));
-
-			if (markup != NULL) {
-				GString *str = g_string_new ("");
-				value_get_as_gstring (cell->value, str, NULL);
-				html_new_markup (output, markup, str->str, version);
-				g_string_free (str, TRUE);
-			} else {
-				rendered_string = gnm_cell_get_rendered_text (cell);
-				html_print_encoded (output, rendered_string);
-				g_free (rendered_string);
-			}
-		}
-
-		if (r > 0 || g > 0 || b > 0)
-			gsf_output_puts (output, "</font>");
-		if (hlink_target)
-			gsf_output_puts (output, "</a>");
-		if (style != NULL) {
-			if (gnm_style_get_font_strike (style)) {
-				if (version == HTML32)
-					gsf_output_puts (output, "</strike>");
-				else
-					gsf_output_puts (output, "</span>");
-			}
-			switch (gnm_style_get_font_script (style)) {
-			case GO_FONT_SCRIPT_SUB:
-				gsf_output_puts (output, "</sub>");
-				break;
-			case GO_FONT_SCRIPT_SUPER:
-				gsf_output_puts (output, "</sup>");
-				break;
-			default:
-				break;
-			}
-			if (font_is_monospaced (style))
-				gsf_output_puts (output, "</tt>");
-			if (gnm_style_get_font_uline (style) != UNDERLINE_NONE)
-				gsf_output_puts (output, "</u>");
-			if (gnm_style_get_font_bold (style))
-				gsf_output_puts (output, "</b>");
-			if (gnm_style_get_font_italic (style))
-				gsf_output_puts (output, "</i>");
+		switch (gnm_style_get_font_script (style)) {
+		case GO_FONT_SCRIPT_SUB:
+			gsf_output_puts (output, "<sub>");
+			break;
+		case GO_FONT_SCRIPT_SUPER:
+			gsf_output_puts (output, "<sup>");
+			break;
+		default:
+			break;
 		}
 	}
+
+	if (cell != NULL) {
+		const PangoAttrList * markup = NULL;
+
+		if ((cell->value->type == VALUE_STRING)
+		    && (VALUE_FMT (cell->value) != NULL)
+		    && go_format_is_markup (VALUE_FMT (cell->value)))
+			markup = go_format_get_markup (VALUE_FMT (cell->value));
+
+		if (markup != NULL) {
+			GString *str = g_string_new ("");
+			value_get_as_gstring (cell->value, str, NULL);
+			html_new_markup (output, markup, str->str, version);
+			g_string_free (str, TRUE);
+		} else {
+			rendered_string = gnm_cell_get_rendered_text (cell);
+			html_print_encoded (output, rendered_string);
+			g_free (rendered_string);
+		}
+	}
+
+	if (style != NULL) {
+		if (gnm_style_get_font_strike (style))
+				gsf_output_puts (output, "</strike>");
+
+		switch (gnm_style_get_font_script (style)) {
+		case GO_FONT_SCRIPT_SUB:
+			gsf_output_puts (output, "</sub>");
+			break;
+		case GO_FONT_SCRIPT_SUPER:
+			gsf_output_puts (output, "</sup>");
+			break;
+		default:
+			break;
+		}
+		if (font_is_monospaced (style))
+			gsf_output_puts (output, "</tt>");
+		if (gnm_style_get_font_uline (style) != UNDERLINE_NONE)
+			gsf_output_puts (output, "</u>");
+		if (gnm_style_get_font_bold (style))
+			gsf_output_puts (output, "</b>");
+		if (gnm_style_get_font_italic (style))
+			gsf_output_puts (output, "</i>");
+	}
+
+    gsf_output_puts (output, "\",");
 }
-
-static void
-write_cell (GsfOutput *output, Sheet *sheet, gint row, gint col, html_version_t version, gboolean is_merge)
-{
-	GnmCell *cell;
-	GnmStyle const *style;
-
-	style = sheet_style_get (sheet, col, row);
-	cell = sheet_cell_get (sheet, col, row);
-	gsf_output_printf (output, ">");
-	html_write_cell_content (output, cell, style, version);
-	gsf_output_puts (output, "</td>\n");
-}
-
 
 /*
  * write_row:
@@ -427,6 +357,7 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
 {
 	char const *text = NULL;
     GnmCell *cell;
+    GnmStyle const *style;
 
 
     gint col;
@@ -447,16 +378,17 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
             cell = sheet_cell_get (sheet, merge_range->start.col, merge_range->start.row);
             if (cell != NULL && cell->value) {
                 text = value_peek_string (cell->value);
-                gsf_output_puts (output, "<td raw=\"");
-                html_print_encoded_attr_value (output, text);
-                gsf_output_puts (output, "\" ");
+                pwcsv_print_encoded (output, text);
 
-                write_cell (output, sheet, merge_range->start.row, merge_range->start.col, version, FALSE);
-                continue;
+                text = gnm_cell_get_rendered_text (cell);
+                pwcsv_print_encoded (output, text);
+
+
+                style = sheet_style_get (sheet, col, row);
+                html_write_cell_content (output, cell, style, version);
+            } else {
+                gsf_output_puts (output, ",,,");
             }
-
-            gsf_output_puts (output, "<td ");
-            write_cell (output, sheet, merge_range->start.row, merge_range->start.col, version, FALSE);
             continue;
         }
 
@@ -464,17 +396,19 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
         cell = sheet_cell_get (sheet, col, row);
         if (cell != NULL && cell->value) {
             text = value_peek_string (cell->value);
-            gsf_output_puts (output, "<td raw=\"");
-            html_print_encoded_attr_value (output, text);
-            gsf_output_puts (output, "\" ");
+            pwcsv_print_encoded (output, text);
 
-            write_cell (output, sheet, row, col, version, FALSE);
-            continue;
+            text = gnm_cell_get_rendered_text (cell);
+            pwcsv_print_encoded (output, text);
+
+            style = sheet_style_get (sheet, col, row);
+            html_write_cell_content (output, cell, style, version);
+        } else {
+            gsf_output_puts (output, ",,,");
         }
-
-        gsf_output_puts (output, "<td ");
-		write_cell (output, sheet, row, col, version, FALSE);
 	}
+
+    gsf_output_puts (output, "\n");
 }
 
 /*
@@ -492,15 +426,12 @@ write_sheet (GsfOutput *output, Sheet *sheet,
 	GnmRange total_range;
 	gint row;
 
-	gsf_output_puts (output, "<table>\n");
 
 	total_range = sheet_get_extent (sheet, TRUE, TRUE);
 	for (row = total_range.start.row; row <=  total_range.end.row; row++) {
-		gsf_output_puts (output, "<tr>\n");
 		write_row (output, sheet, row, &total_range, version);
-		gsf_output_puts (output, "</tr>\n");
 	}
-	gsf_output_puts (output, "</table>\n");
+	gsf_output_puts (output, "---\n");
 }
 
 /*
@@ -520,23 +451,12 @@ html_file_save (GOFileSaver const *fs, GOIOContext *io_context,
 	g_return_if_fail (wb != NULL);
 	g_return_if_fail (output != NULL);
 
-	gsf_output_puts (output,
-"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
-"\t\t\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"
-"<html>\n"
-"<head>\n\t<title>Tables 123</title>\n"
-"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n"
-"<meta name=\"generator\" content=\"Gnumeric " GNM_VERSION_FULL  " via " G_PLUGIN_FOR_HTML "\" />\n"
-"</head>\n<body>\n");
-
 	sheets = workbook_sheets (wb);
 	save_scope = go_file_saver_get_save_scope (fs);
 	for (ptr = sheets ; ptr != NULL ; ptr = ptr->next) {
 		write_sheet (output, (Sheet *) ptr->data, version, save_scope);
 	}
 	g_slist_free (sheets);
-	if (version == HTML32 || version == HTML40 || version == XHTML)
-		gsf_output_puts (output, "</body>\n</html>\n");
 }
 
 void
