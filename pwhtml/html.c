@@ -66,6 +66,7 @@ static void
 pwcsv_print_encoded (GsfOutput *output, char const *str)
 {
     gunichar c;
+    gchar *encoded;
 
     if (str == NULL)
         return;
@@ -78,7 +79,14 @@ pwcsv_print_encoded (GsfOutput *output, char const *str)
                 break;
             default:
                 c = g_utf8_get_char (str);
-                gsf_output_puts (output, g_ucs4_to_utf8(&c, 1, NULL, NULL, NULL));
+                if (((c >= 0x20) && (c < 0x80)) || (c == '\n') || (c == '\r') || (c == '\t')) {
+                    gsf_output_write (output, 1, (guint8 *)str);
+                } else {
+                    c = g_utf8_get_char (str);
+                    encoded = g_ucs4_to_utf8(&c, 1, NULL, NULL, NULL);
+                    gsf_output_puts (output, encoded);
+                    g_free(encoded);
+                }
                 break;
         }
     }
@@ -98,6 +106,7 @@ static void
 html_print_encoded (GsfOutput *output, char const *str)
 {
     gunichar c;
+    gchar *encoded;
 
 	if (str == NULL)
 		return;
@@ -126,9 +135,16 @@ html_print_encoded (GsfOutput *output, char const *str)
 				}
 				break;
 			default:
-				c = g_utf8_get_char (str);
-                gsf_output_puts (output, g_ucs4_to_utf8(&c, 1, NULL, NULL, NULL));
-				break;
+                c = g_utf8_get_char (str);
+                if (((c >= 0x20) && (c < 0x80)) || (c == '\n') || (c == '\r') || (c == '\t')) {
+                    gsf_output_write (output, 1, (guint8 *)str);
+                } else {
+                    c = g_utf8_get_char (str);
+                    encoded = g_ucs4_to_utf8(&c, 1, NULL, NULL, NULL);
+                    gsf_output_puts (output, encoded);
+                    g_free(encoded);
+                }
+                break;
 		}
 	}
 }
