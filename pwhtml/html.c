@@ -280,11 +280,9 @@ html_new_markup (GsfOutput *output, const PangoAttrList *markup, char const *tex
 /*****************************************************************************/
 
 static void
-html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style, html_version_t version)
+html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style, char *rendered_string, html_version_t version)
 {
     gsf_output_puts (output, "\"");
-
-	char *rendered_string;
 
 	if (style != NULL) {
 		if (gnm_style_get_font_italic (style))
@@ -324,9 +322,7 @@ html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style
 			html_new_markup (output, markup, str->str, version);
 			g_string_free (str, TRUE);
 		} else {
-			rendered_string = gnm_cell_get_rendered_text (cell);
 			html_print_encoded (output, rendered_string);
-			g_free (rendered_string);
 		}
 	}
 
@@ -371,7 +367,8 @@ html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style
 static void
 write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_version_t version)
 {
-	char const *text = NULL;
+    char const *text = NULL;
+    char *rendered_string = NULL;
     GnmCell *cell;
     GnmStyle const *style;
 
@@ -396,12 +393,13 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
                 text = value_peek_string (cell->value);
                 pwcsv_print_encoded (output, text);
 
-                text = gnm_cell_get_rendered_text (cell);
-                pwcsv_print_encoded (output, text);
-
-
+                rendered_string = gnm_cell_get_rendered_text (cell);
                 style = sheet_style_get (sheet, col, row);
-                html_write_cell_content (output, cell, style, version);
+
+                pwcsv_print_encoded (output, rendered_string);
+                html_write_cell_content (output, cell, style, rendered_string, version);
+
+                g_free (rendered_string);
             } else {
                 gsf_output_puts (output, ",,,");
             }
@@ -414,11 +412,13 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
             text = value_peek_string (cell->value);
             pwcsv_print_encoded (output, text);
 
-            text = gnm_cell_get_rendered_text (cell);
-            pwcsv_print_encoded (output, text);
-
+            rendered_string = gnm_cell_get_rendered_text (cell);
             style = sheet_style_get (sheet, col, row);
-            html_write_cell_content (output, cell, style, version);
+
+            pwcsv_print_encoded (output, rendered_string);
+            html_write_cell_content (output, cell, style, rendered_string, version);
+
+            g_free (rendered_string);
         } else {
             gsf_output_puts (output, ",,,");
         }
@@ -443,7 +443,7 @@ write_sheet (GsfOutput *output, Sheet *sheet,
 	gint row;
 
 
-	total_range = sheet_get_extent (sheet, TRUE, TRUE);
+	total_range = sheet_get_extent (sheet, FALSE, TRUE);
 	for (row = total_range.start.row; row <=  total_range.end.row; row++) {
 		write_row (output, sheet, row, &total_range, version);
 	}
