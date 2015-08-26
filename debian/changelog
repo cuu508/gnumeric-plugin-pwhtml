@@ -1,0 +1,47 @@
+gnumeric-plugin-pwhtml (1.1-0ubuntu1) vivid; urgency=low
+
+  * Packaging fixes
+
+ -- Pēteris Caune <cuu508@gmail.com>  Wed, 26 Aug 2015 16:24:17 +0300
+
+gnumeric-plugin-pwhtml (1.0-0ubuntu7) vivid; urgency=low
+
+  * Packaging fixes
+
+ -- Pēteris Caune <cuu508@gmail.com>  Wed, 26 Aug 2015 16:24:17 +0300
+
+gnumeric-plugin-pwhtml (1.0-0ubuntu6) vivid; urgency=low
+
+  * Updated upstream, doesn't install .c and .h files
+
+ -- Pēteris Caune <cuu508@gmail.com>  Wed, 26 Aug 2015 16:24:17 +0300
+
+gnumeric-plugin-pwhtml (1.0-0ubuntu5) vivid; urgency=low
+
+  * Fix build dependencies
+
+ -- Pēteris Caune <cuu508@gmail.com>  Wed, 26 Aug 2015 16:24:17 +0300
+
+gnumeric-plugin-pwhtml (1.0-0ubuntu4) vivid; urgency=low
+
+  * Fix build dependencies
+
+ -- Pēteris Caune <cuu508@gmail.com>  Wed, 26 Aug 2015 16:24:17 +0300
+
+gnumeric-plugin-pwhtml (1.0-0ubuntu3) vivid; urgency=low
+
+  * Fix build dependencies
+
+ -- Pēteris Caune <cuu508@gmail.com>  Wed, 26 Aug 2015 16:24:17 +0300
+
+gnumeric-plugin-pwhtml (1.0-0ubuntu2) vivid; urgency=low
+
+  * Fix build dependencies
+
+ -- Pēteris Caune <cuu508@gmail.com>  Wed, 26 Aug 2015 16:24:17 +0300
+
+gnumeric-plugin-pwhtml (1.0-0ubuntu1) vivid; urgency=low
+
+  * Initial release
+
+ -- Pēteris Caune <cuu508@gmail.com>  Wed, 26 Aug 2015 16:24:17 +0300

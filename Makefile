@@ -19,7 +19,7 @@ install:
 	cp  pwhtml/plugin.xml $(DESTDIR)/usr/lib/gnumeric/1.12.18/plugins/pwhtml
 	cp  pwhtml/pwhtml.so $(DESTDIR)/usr/lib/gnumeric/1.12.18/plugins/pwhtml
 
-target = gnumeric-plugin-pwhtml-1.0
+target = gnumeric-plugin-pwhtml_1.1
 dist: clean
 	rm -rf $(target)
 	mkdir $(target)
@@ -27,6 +27,17 @@ dist: clean
 	cp Makefile $(target)
 
 	rm -f $(target).tar.gz
-	tar cfzh $(target).tar.gz $(target)
+	tar cfzh $(target).orig.tar.gz $(target)
 	rm -rf $(target)
+
+debuild: dist
+	rm -rf .debuild && mkdir .debuild
+	cp -r debian .debuild
+	cp -r pwhtml .debuild
+	cp Makefile .debuild
+	cd .debuild && debuild -S -sa
+
+upload:
+	dput ppa:cuu508/ppa $(target)-0ubuntu1_source.changes
+	backportpackage -s vivid -d trusty -u ppa:cuu508/ppa $(target)-0ubuntu1.dsc
 
