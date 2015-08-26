@@ -383,31 +383,15 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
         GnmCellPos pos;
         pos.col = col;
         pos.row = row;
-
-
-        /* is this covered by a merge */
         merge_range = gnm_sheet_merge_contains_pos  (sheet, &pos);
         if (merge_range != NULL) {
+            /* If cell is inside a merged region, we use the
+               corner cell of the merged region: */
             cell = sheet_cell_get (sheet, merge_range->start.col, merge_range->start.row);
-            if (cell != NULL && cell->value) {
-                text = value_peek_string (cell->value);
-                pwcsv_print_encoded (output, text);
-
-                rendered_string = gnm_cell_get_rendered_text (cell);
-                style = sheet_style_get (sheet, col, row);
-
-                pwcsv_print_encoded (output, rendered_string);
-                html_write_cell_content (output, cell, style, rendered_string, version);
-
-                g_free (rendered_string);
-            } else {
-                gsf_output_puts (output, ",,,");
-            }
-            continue;
+        } else {
+            cell = sheet_cell_get (sheet, col, row);
         }
 
-
-        cell = sheet_cell_get (sheet, col, row);
         if (cell != NULL && cell->value) {
             text = value_peek_string (cell->value);
             pwcsv_print_encoded (output, text);
@@ -419,6 +403,10 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
             html_write_cell_content (output, cell, style, rendered_string, version);
 
             g_free (rendered_string);
+
+            /* Without this, we're accumulating lots of heap memory
+               on big spreadsheets. */
+            gnm_cell_unrender(cell);
         } else {
             gsf_output_puts (output, ",,,");
         }

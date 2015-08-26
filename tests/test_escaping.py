@@ -6,6 +6,7 @@ import tempfile
 
 HERE = os.path.dirname(__file__)
 
+
 class EscapingTestCase(unittest.TestCase):
 
     def _convert(self, filename):
@@ -21,13 +22,10 @@ class EscapingTestCase(unittest.TestCase):
 
         return result
 
-
     def test_quotes(self):
         r = self._convert("quotes.xls")
-        # quotes should be replaced with &quot; in attributes
-        assert 'raw="Bar &quot;Baz&quot;"' in r
-        # but left alone in text
-        assert 'Bar "Baz"' in r
+        # quotes should be escaped CSV style
+        assert 'Bar ""Baz""' in r
 
 if __name__ == '__main__':
     unittest.main()
