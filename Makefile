@@ -1,10 +1,8 @@
-GNM_DIR=/home/vagrant/gnumeric-1.12.9
-
 GODEPS=libspreadsheet-1.12
-INCLUDES = `PKG_CONFIG_PATH=$(GNM_DIR) pkg-config --cflags $(GODEPS)`
-LIBS = `PKG_CONFIG_PATH=$(GNM_DIR) pkg-config --libs $(GODEPS)`
+INCLUDES = `pkg-config --cflags $(GODEPS)`
+LIBS = `pkg-config --libs $(GODEPS)`
 
-CFLAGS=$(INCLUDES) -I$(GNM_DIR) -I$(GNM_DIR)/src -Wall
+CFLAGS=$(INCLUDES) -Wall
 
 compile: pwhtml/boot.o pwhtml/html.o pwhtml/font.o
 	gcc $(LIBS) -O3 -g -shared -o pwhtml/pwhtml.so $^
@@ -17,11 +15,18 @@ clean:
 	rm -f pwhtml/*.so
 
 install:
-	cp -r pwhtml /usr/lib/gnumeric/1.12.18/plugins/
+	mkdir -p $(DESTDIR)/usr/lib/gnumeric/1.12.18/plugins/pwhtml
+	cp  pwhtml/plugin.xml $(DESTDIR)/usr/lib/gnumeric/1.12.18/plugins/pwhtml
+	cp  pwhtml/pwhtml.so $(DESTDIR)/usr/lib/gnumeric/1.12.18/plugins/pwhtml
 
-dist = gnumeric-plugin-pwhtml-trusty64
-binary: compile
-	rm -f $(dist).tar.gz
-	tar cfzh $(dist).tar.gz pwhtml/pwhtml.so pwhtml/plugin.xml
-	rm -rf $(dist)
+target = gnumeric-plugin-pwhtml-1.0
+dist: clean
+	rm -rf $(target)
+	mkdir $(target)
+	cp -r pwhtml $(target)
+	cp Makefile $(target)
+
+	rm -f $(target).tar.gz
+	tar cfzh $(target).tar.gz $(target)
+	rm -rf $(target)
 
