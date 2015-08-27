@@ -26,24 +26,16 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <gnumeric.h>
-#include <goffice/goffice.h>
 #include "workbook-view.h"
 #include "workbook.h"
 #include "sheet-style.h"
 #include "style.h"
-#include "style-color.h"
-#include "html.h"
 #include "cell.h"
 #include "sheet.h"
 #include "sheet-merge.h"
 #include "value.h"
 #include "font.h"
-#include "cellspan.h"
-#include "style-border.h"
-#include <rendered-value.h>
-#include "style.h"
-#include "hlink.h"
+#include "gnm-format.h"
 
 #include <gsf/gsf-output.h>
 #include <string.h>
@@ -280,7 +272,7 @@ html_new_markup (GsfOutput *output, const PangoAttrList *markup, char const *tex
 /*****************************************************************************/
 
 static void
-html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style, char *rendered_string, html_version_t version)
+html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style, char *formatted_string, html_version_t version)
 {
     gsf_output_puts (output, "\"");
 
@@ -322,7 +314,7 @@ html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style
 			html_new_markup (output, markup, str->str, version);
 			g_string_free (str, TRUE);
 		} else {
-			html_print_encoded (output, rendered_string);
+			html_print_encoded (output, formatted_string);
 		}
 	}
 
@@ -368,16 +360,14 @@ static void
 write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_version_t version)
 {
     char const *text = NULL;
-    char *rendered_string = NULL;
+    char *formatted_string = NULL;
     GnmCell *cell;
     GnmStyle const *style;
 
+    GODateConventions const *date_conv = sheet->workbook ? workbook_date_conv (sheet->workbook) : NULL;
+
 
     gint col;
-    ColRowInfo const *ri = sheet_row_get_info (sheet, row);
-    if (ri->needs_respan)
-        row_calc_spans ((ColRowInfo *) ri, row, sheet);
-
     for (col = range->start.col; col <= range->end.col; col++) {
         GnmRange const *merge_range;
         GnmCellPos pos;
@@ -396,13 +386,16 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
             text = value_peek_string (cell->value);
             pwcsv_print_encoded (output, text);
 
-            rendered_string = gnm_cell_get_rendered_text (cell);
             style = sheet_style_get (sheet, col, row);
+            GOFormat const *format = gnm_style_get_format (style);
+            // set col_width to 1 pixel. This works around gnumeric quirk
+            // where, in wider cells, it formats 9,3 as 9,3000000001
+            formatted_string = format_value (format, cell->value, 1, date_conv);
 
-            pwcsv_print_encoded (output, rendered_string);
-            html_write_cell_content (output, cell, style, rendered_string, version);
+            pwcsv_print_encoded (output, formatted_string);
+            html_write_cell_content (output, cell, style, formatted_string, version);
 
-            g_free (rendered_string);
+            g_free (formatted_string);
 
             /* Without this, we're accumulating lots of heap memory
                on big spreadsheets. */
