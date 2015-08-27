@@ -370,10 +370,9 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range)
 
             style = sheet_style_get (sheet, col, row);
             GOFormat const *format = gnm_style_get_format (style);
-            // set col_width to 1 pixel. This works around gnumeric quirk
-            // where, in wider cells, it formats 9,3 as 9,3000000001
-            formatted_string = format_value (format, cell->value, 1, date_conv);
-
+            // set col_width to 16-something. This works around gnumeric quirk
+            // where, in wider cells, it formats 9,3 as 9,300000000000001
+            formatted_string = format_value (format, cell->value, 16, date_conv);
             pwcsv_print_encoded (output, formatted_string);
             html_write_cell_content (output, cell, style, formatted_string);
 

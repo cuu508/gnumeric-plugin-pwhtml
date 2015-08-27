@@ -1,3 +1,10 @@
+gnumeric-plugin-pwhtml (1.2-0ubuntu1) vivid; urgency=low
+
+  * Speed up: avoid creating pango layouts
+  * Bugfix: work around issue where gnumeric formats 9,3 as 9,300000001
+
+ -- Pēteris Caune <cuu508@gmail.com>  Wed, 26 Aug 2015 16:24:17 +0300
+
 gnumeric-plugin-pwhtml (1.1-0ubuntu1) vivid; urgency=low
 
   * Packaging fixes

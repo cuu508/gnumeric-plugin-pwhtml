@@ -19,7 +19,7 @@ install:
 	cp  pwhtml/plugin.xml $(DESTDIR)/usr/lib/gnumeric/1.12.18/plugins/pwhtml
 	cp  pwhtml/pwhtml.so $(DESTDIR)/usr/lib/gnumeric/1.12.18/plugins/pwhtml
 
-target = gnumeric-plugin-pwhtml_1.1
+target = gnumeric-plugin-pwhtml_1.2
 dist: clean
 	rm -rf $(target)
 	mkdir $(target)
