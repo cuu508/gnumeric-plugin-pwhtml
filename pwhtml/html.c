@@ -41,19 +41,6 @@
 #include <string.h>
 
 
-/*
- * html_version_t:
- *
- * version selector
- *
- */
-typedef enum {
-	HTML40    = 0,
-	HTML32    = 1,
-	HTML40F   = 2,
-	XHTML     = 3
-} html_version_t;
-
 static void
 pwcsv_print_encoded (GsfOutput *output, char const *str)
 {
@@ -157,7 +144,7 @@ cb_html_add_chars (GsfOutput *output, char const *text, int len)
 }
 
 static char const *
-cb_html_attrs_as_string (GsfOutput *output, PangoAttribute *a, html_version_t version)
+cb_html_attrs_as_string (GsfOutput *output, PangoAttribute *a)
 {
 /* 	PangoColor const *c; */
 	char const *closure = NULL;
@@ -195,8 +182,7 @@ cb_html_attrs_as_string (GsfOutput *output, PangoAttribute *a, html_version_t ve
 		}
 		break;
 	case PANGO_ATTR_UNDERLINE :
-		if ((version != HTML40) &&
-		    (((PangoAttrInt *)a)->value != PANGO_UNDERLINE_NONE)) {
+		if (((PangoAttrInt *)a)->value != PANGO_UNDERLINE_NONE) {
 			gsf_output_puts (output, "<u>");
 			closure = "</u>";
 		}
@@ -229,8 +215,7 @@ cb_html_attrs_as_string (GsfOutput *output, PangoAttribute *a, html_version_t ve
 }
 
 static void
-html_new_markup (GsfOutput *output, const PangoAttrList *markup, char const *text,
-		 html_version_t version)
+html_new_markup (GsfOutput *output, const PangoAttrList *markup, char const *text)
 {
 	int handled = 0;
 	PangoAttrIterator * iter;
@@ -251,7 +236,7 @@ html_new_markup (GsfOutput *output, const PangoAttrList *markup, char const *tex
 			cb_html_add_chars (output, text + handled, from - handled);
 		list = pango_attr_iterator_get_attrs (iter);
 		for (l = list; l != NULL; l = l->next) {
-			char const *result = cb_html_attrs_as_string (output, l->data, version);
+			char const *result = cb_html_attrs_as_string (output, l->data);
 			if (result != NULL)
 				g_string_prepend (closure, result);
 		}
@@ -272,7 +257,7 @@ html_new_markup (GsfOutput *output, const PangoAttrList *markup, char const *tex
 /*****************************************************************************/
 
 static void
-html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style, char *formatted_string, html_version_t version)
+html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style, char *formatted_string)
 {
     gsf_output_puts (output, "\"");
 
@@ -311,7 +296,7 @@ html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style
 		if (markup != NULL) {
 			GString *str = g_string_new ("");
 			value_get_as_gstring (cell->value, str, NULL);
-			html_new_markup (output, markup, str->str, version);
+			html_new_markup (output, markup, str->str);
 			g_string_free (str, TRUE);
 		} else {
 			html_print_encoded (output, formatted_string);
@@ -352,12 +337,9 @@ html_write_cell_content (GsfOutput *output, GnmCell *cell, GnmStyle const *style
  * @sheet: the gnumeric sheet
  * @row: the row number
  *
- * Set up a TD node for each cell in the given row, witht eh  appropriate
- * colspan and rowspan.
- * Call write_cell for each cell.
  */
 static void
-write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_version_t version)
+write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range)
 {
     char const *text = NULL;
     char *formatted_string = NULL;
@@ -393,7 +375,7 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
             formatted_string = format_value (format, cell->value, 1, date_conv);
 
             pwcsv_print_encoded (output, formatted_string);
-            html_write_cell_content (output, cell, style, formatted_string, version);
+            html_write_cell_content (output, cell, style, formatted_string);
 
             g_free (formatted_string);
 
@@ -417,8 +399,7 @@ write_row (GsfOutput *output, Sheet *sheet, gint row, GnmRange *range, html_vers
  * set up a table and call write_row for each row
  */
 static void
-write_sheet (GsfOutput *output, Sheet *sheet,
-	     html_version_t version, GOFileSaveScope save_scope)
+write_sheet (GsfOutput *output, Sheet *sheet, GOFileSaveScope save_scope)
 {
 	GnmRange total_range;
 	gint row;
@@ -426,40 +407,34 @@ write_sheet (GsfOutput *output, Sheet *sheet,
 
 	total_range = sheet_get_extent (sheet, FALSE, TRUE);
 	for (row = total_range.start.row; row <=  total_range.end.row; row++) {
-		write_row (output, sheet, row, &total_range, version);
+		write_row (output, sheet, row, &total_range);
 	}
 	gsf_output_puts (output, "---\n");
 }
 
 /*
- * html_file_save:
+ * pwhtml_file_save:
  *
- * write the html file (version of html according to version argument)
+ * write the HTML-flavored CSV file.
  */
-static void
-html_file_save (GOFileSaver const *fs, GOIOContext *io_context,
-		WorkbookView const *wb_view, GsfOutput *output, html_version_t version)
-{
-	GSList *sheets, *ptr;
-	Workbook *wb = wb_view_get_workbook (wb_view);
-	GOFileSaveScope save_scope;
-
-	g_return_if_fail (fs != NULL);
-	g_return_if_fail (wb != NULL);
-	g_return_if_fail (output != NULL);
-
-	sheets = workbook_sheets (wb);
-	save_scope = go_file_saver_get_save_scope (fs);
-	for (ptr = sheets ; ptr != NULL ; ptr = ptr->next) {
-		write_sheet (output, (Sheet *) ptr->data, version, save_scope);
-	}
-	g_slist_free (sheets);
-}
 
 void
 pwhtml_file_save (GOFileSaver const *fs, GOIOContext *io_context,
 		 WorkbookView const *wb_view, GsfOutput *output)
 {
-	html_file_save (fs, io_context, wb_view, output, XHTML);
+    GSList *sheets, *ptr;
+    Workbook *wb = wb_view_get_workbook (wb_view);
+    GOFileSaveScope save_scope;
+
+    g_return_if_fail (fs != NULL);
+    g_return_if_fail (wb != NULL);
+    g_return_if_fail (output != NULL);
+
+    sheets = workbook_sheets (wb);
+    save_scope = go_file_saver_get_save_scope (fs);
+    for (ptr = sheets ; ptr != NULL ; ptr = ptr->next) {
+        write_sheet (output, (Sheet *) ptr->data, save_scope);
+    }
+    g_slist_free (sheets);
 }
 
