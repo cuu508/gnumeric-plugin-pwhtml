@@ -1,3 +1,15 @@
+gnumeric-plugin-pwhtml (1.4-0ubuntu1) zesty; urgency=low
+
+  * Look up gnumeric version with pkg-config
+
+ -- Pēteris Caune <cuu508@gmail.com>  Mon, 14 Aug 2017 15:36:00 +0300
+
+gnumeric-plugin-pwhtml (1.3-0ubuntu1) zesty; urgency=low
+
+  * Repackaging for 17.04
+
+ -- Pēteris Caune <cuu508@gmail.com>  Mon, 14 Aug 2017 15:04:00 +0300
+
 gnumeric-plugin-pwhtml (1.2-0ubuntu1) vivid; urgency=low
 
   * Speed up: avoid creating pango layouts

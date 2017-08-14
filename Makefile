@@ -1,6 +1,7 @@
 GODEPS=libspreadsheet-1.12
 INCLUDES = `pkg-config --cflags $(GODEPS)`
 LIBS = `pkg-config --libs $(GODEPS)`
+GNMVERSION = `pkg-config --modversion $(GODEPS)`
 
 CFLAGS=$(INCLUDES) -Wall
 
@@ -15,11 +16,11 @@ clean:
 	rm -f pwhtml/*.so
 
 install:
-	mkdir -p $(DESTDIR)/usr/lib/gnumeric/1.12.18/plugins/pwhtml
-	cp  pwhtml/plugin.xml $(DESTDIR)/usr/lib/gnumeric/1.12.18/plugins/pwhtml
-	cp  pwhtml/pwhtml.so $(DESTDIR)/usr/lib/gnumeric/1.12.18/plugins/pwhtml
+	mkdir -p $(DESTDIR)/usr/lib/gnumeric/$(GNMVERSION)/plugins/pwhtml
+	cp  pwhtml/plugin.xml $(DESTDIR)/usr/lib/gnumeric/$(GNMVERSION)/plugins/pwhtml
+	cp  pwhtml/pwhtml.so $(DESTDIR)/usr/lib/gnumeric/$(GNMVERSION)/plugins/pwhtml
 
-target = gnumeric-plugin-pwhtml_1.2
+target = gnumeric-plugin-pwhtml_1.4
 dist: clean
 	rm -rf $(target)
 	mkdir $(target)
@@ -39,5 +40,5 @@ debuild: dist
 
 upload:
 	dput ppa:cuu508/ppa $(target)-0ubuntu1_source.changes
-	backportpackage -s vivid -d trusty -u ppa:cuu508/ppa $(target)-0ubuntu1.dsc
+	backportpackage -s zesty -d xenial -u ppa:cuu508/ppa $(target)-0ubuntu1.dsc
 
